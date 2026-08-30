@@ -87,6 +87,17 @@ func (p *Provider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return p.domainFilter
 }
 
+// verb marks a log line as a dry run. Logging "creating recordset" and then not
+// creating it makes the logs unreadable at the moment they matter most, which is
+// when somebody is checking whether a run wrote anything.
+func (p *Provider) verb(action string) string {
+	if p.dryRun {
+		return "dry run, would be " + action
+	}
+
+	return action
+}
+
 // Retryable reports whether ExternalDNS should retry after this error. Rate limits
 // and upstream faults are worth another attempt; a rejected request or a bad
 // credential is not, and retrying it only burns quota.
@@ -193,7 +204,7 @@ func (p *Provider) create(ctx context.Context, zoneMap provider.ZoneIDName, endp
 				ttlAsInt(ep.RecordTTL),
 				cleanTargets(ep.RecordType, ep.Targets...),
 			))
-			log.WithFields(log.Fields{"zone": logsafe.String(zoneName), "record": logsafe.String(ep.DNSName), "type": logsafe.String(ep.RecordType)}).Info("creating recordset")
+			log.WithFields(log.Fields{"zone": logsafe.String(zoneName), "record": logsafe.String(ep.DNSName), "type": logsafe.String(ep.RecordType)}).Info(p.verb("creating recordset"))
 		}
 
 		if p.dryRun {
@@ -219,7 +230,7 @@ func (p *Provider) delete(ctx context.Context, zoneMap provider.ZoneIDName, endp
 			log.Debugf("skipping deletion of %s %s: outside the configured zones", logsafe.String(ep.RecordType), logsafe.String(ep.DNSName))
 			continue
 		}
-		log.WithFields(log.Fields{"zone": logsafe.String(zoneName), "record": logsafe.String(ep.DNSName), "type": logsafe.String(ep.RecordType)}).Info("deleting recordset")
+		log.WithFields(log.Fields{"zone": logsafe.String(zoneName), "record": logsafe.String(ep.DNSName), "type": logsafe.String(ep.RecordType)}).Info(p.verb("deleting recordset"))
 
 		if p.dryRun {
 			continue
@@ -251,7 +262,7 @@ func (p *Provider) update(ctx context.Context, zoneMap provider.ZoneIDName, endp
 			log.Debugf("skipping update of %s %s: outside the configured zones", logsafe.String(ep.RecordType), logsafe.String(ep.DNSName))
 			continue
 		}
-		log.WithFields(log.Fields{"zone": logsafe.String(zoneName), "record": logsafe.String(ep.DNSName), "type": logsafe.String(ep.RecordType)}).Info("updating recordset")
+		log.WithFields(log.Fields{"zone": logsafe.String(zoneName), "record": logsafe.String(ep.DNSName), "type": logsafe.String(ep.RecordType)}).Info(p.verb("updating recordset"))
 
 		if p.dryRun {
 			continue
