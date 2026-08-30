@@ -8,6 +8,7 @@ before:
 builds:
   - id: external-dns-akamai-webhook
     binary: external-dns-akamai-webhook
+    main: .
     env:
       - CGO_ENABLED=0
     goos: [linux, darwin]
@@ -33,47 +34,29 @@ archives:
       - NOTICE
 
 # The primary artifact is the image: this runs as a sidecar of the ExternalDNS
-# pod. One image per arch, merged into a manifest list below, so a node pulls
-# its own architecture.
-#
-# goreleaser warns that dockers/docker_manifests will eventually be replaced by
-# dockers_v2. That key does not exist in 2.17.1, so this is the current form.
-dockers:
-  - id: amd64
-    use: buildx
-    goarch: amd64
-    dockerfile: Dockerfile.release
-    image_templates:
-      - "ghcr.io/pixibixi/external-dns-akamai-webhook:{{ .Version }}-amd64"
-    build_flag_templates:
-      - "--platform=linux/amd64"
-      - "--label=org.opencontainers.image.source={{ .GitURL }}"
-      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
-      - "--label=org.opencontainers.image.version={{ .Version }}"
-      - "--label=org.opencontainers.image.licenses=Apache-2.0"
-
-  - id: arm64
-    use: buildx
-    goarch: arm64
-    dockerfile: Dockerfile.release
-    image_templates:
-      - "ghcr.io/pixibixi/external-dns-akamai-webhook:{{ .Version }}-arm64"
-    build_flag_templates:
-      - "--platform=linux/arm64"
-      - "--label=org.opencontainers.image.source={{ .GitURL }}"
-      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
-      - "--label=org.opencontainers.image.version={{ .Version }}"
-      - "--label=org.opencontainers.image.licenses=Apache-2.0"
-
-docker_manifests:
-  - name_template: "ghcr.io/pixibixi/external-dns-akamai-webhook:{{ .Version }}"
-    image_templates:
-      - "ghcr.io/pixibixi/external-dns-akamai-webhook:{{ .Version }}-amd64"
-      - "ghcr.io/pixibixi/external-dns-akamai-webhook:{{ .Version }}-arm64"
-  - name_template: "ghcr.io/pixibixi/external-dns-akamai-webhook:latest"
-    image_templates:
-      - "ghcr.io/pixibixi/external-dns-akamai-webhook:{{ .Version }}-amd64"
-      - "ghcr.io/pixibixi/external-dns-akamai-webhook:{{ .Version }}-arm64"
+# pod. ko cross-compiles and packs a distroless image without a Dockerfile, a
+# daemon or buildx, and publishes the multi-arch manifest itself.
+kos:
+  - id: image
+    build: external-dns-akamai-webhook
+    main: .   # required since Go 1.27, an empty main reaches ko as ""
+    repositories:
+      - ghcr.io/pixibixi/external-dns-akamai-webhook
+    base_image: gcr.io/distroless/static:nonroot
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    tags:
+      - "{{ .Version }}"
+      - "{{ .Major }}.{{ .Minor }}"
+      - "{{ .Major }}"
+      - '{{ if not .Prerelease }}latest{{ end }}'
+    bare: true
+    labels:
+      org.opencontainers.image.source: "{{ .GitURL }}"
+      org.opencontainers.image.revision: "{{ .FullCommit }}"
+      org.opencontainers.image.version: "{{ .Version }}"
+      org.opencontainers.image.licenses: Apache-2.0
 
 # syft over each archive: the release says what is inside an artifact, not only
 # how it was built.
@@ -81,12 +64,12 @@ sboms:
   - artifacts: archive
 
 # Keyless, so there is no private key to store or rotate. --recursive covers the
-# per-arch images behind the manifest list.
+# per-arch images behind the manifest list ko published.
 docker_signs:
   - cmd: cosign
     artifacts: manifests
     output: true
-    args: ["sign", "-y", "--recursive", "${artifact}@${digest}"]
+    args: ["sign", "-y", "--recursive", "${artifact}"]
 
 checksum:
   name_template: 'checksums.txt'

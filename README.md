@@ -99,11 +99,11 @@ TTL comes from the endpoint, falling back to 600 seconds.
 make test      # go test -race ./...
 make lint      # golangci-lint run
 make build     # local binary
-make image     # container image, built from source
+make image     # local container image, from the Dockerfile (releases use ko)
 make snapshot  # full goreleaser dry run, nothing published
 ```
 
-Releases go through goreleaser: `svu` derives the version from the Conventional Commits since the last tag, and the run publishes archives for Linux and macOS, a multi-arch image on `ghcr.io`, SBOMs, a cosign signature on the manifest list and a build provenance attestation.
+Releases go through goreleaser: `svu` derives the version from the Conventional Commits since the last tag, and the run publishes archives for Linux and macOS, a multi-arch image on `ghcr.io` built by [ko](https://ko.build) with no Dockerfile involved, SBOMs, a cosign signature on the manifest list and a build provenance attestation.
 
 ## License
 

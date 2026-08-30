@@ -63,20 +63,6 @@ jobs:
         if: github.ref_type == 'tag' || steps.tag.outputs.new_tag != ''
         run: git fetch --tags --force
 
-      - name: Set up QEMU
-        if: github.ref_type == 'tag' || steps.tag.outputs.new_tag != ''
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
-
-      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
-        if: github.ref_type == 'tag' || steps.tag.outputs.new_tag != ''
-
-      - uses: docker/login-action@06fb636fac595d6fb4b28a5dfcb21a6f5091859c # v4.5.0
-        if: github.ref_type == 'tag' || steps.tag.outputs.new_tag != ''
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       # goreleaser-action verifies the cosign signature of the goreleaser binary
       # it downloads; without cosign on PATH it silently skips that check. It is
       # also what docker_signs calls to sign the manifest list.
