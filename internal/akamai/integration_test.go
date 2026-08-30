@@ -57,6 +57,33 @@ func liveClient(t *testing.T) EdgeDNS {
 	return client
 }
 
+// TestLiveZonesFromEnv covers the other half of buildConfig. Supplying the four
+// credentials explicitly does not read .edgerc at all: it assembles an
+// edgegrid.Config by hand, including MaxBody and HeaderToSign, and that is the
+// path the shipped manifests use since they pull the values from a Secret.
+// Without this the documented default would be the untested branch.
+func TestLiveZonesFromEnv(t *testing.T) {
+	creds := Credentials{
+		ServiceConsumerDomain: os.Getenv("AKAMAI_SERVICECONSUMERDOMAIN"),
+		ClientToken:           os.Getenv("AKAMAI_CLIENT_TOKEN"),
+		ClientSecret:          os.Getenv("AKAMAI_CLIENT_SECRET"),
+		AccessToken:           os.Getenv("AKAMAI_ACCESS_TOKEN"),
+	}
+	if !creds.complete() {
+		t.Skip("set the four AKAMAI_* credential variables to exercise this path")
+	}
+
+	client, err := NewClient(creds, "external-dns-akamai-webhook/integration-test")
+	require.NoError(t, err)
+
+	p := New(client, Config{DomainFilter: &endpoint.DomainFilter{}})
+	zones, err := p.zones(t.Context())
+	require.NoError(t, err)
+	require.NotEmpty(t, zones, "the explicit credentials authenticated but returned no zone")
+
+	t.Logf("%d primary zones through explicit credentials", len(zones))
+}
+
 // TestLiveZones answers the questions no stub can: whether the credentials
 // resolve, whether ShowAll really returns everything, and what the response
 // metadata says about paging.
