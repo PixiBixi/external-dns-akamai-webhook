@@ -111,7 +111,11 @@ Signatures are keyless: there is no public key to fetch, the identity is the wor
 
 ```bash
 TAG=v0.1.0
-IDENTITY="https://github.com/PixiBixi/external-dns-akamai-webhook/.github/workflows/release.yml@refs/tags/${TAG}"
+# The ref is the one the run was triggered on, not the tag: svu creates the tag
+# through the API and goreleaser publishes in the same job, which the push to
+# main started. Verifying against refs/tags fails with "no matching
+# CertificateIdentity found" on a perfectly valid signature.
+IDENTITY="https://github.com/PixiBixi/external-dns-akamai-webhook/.github/workflows/release.yml@refs/heads/main"
 ISSUER=https://token.actions.githubusercontent.com
 
 # Archives, through the signed checksums file
@@ -132,7 +136,7 @@ cosign verify \
 gh attestation verify <archive>.tar.gz --repo PixiBixi/external-dns-akamai-webhook
 ```
 
-Pinning the full identity down to the tag is the point. `--certificate-identity-regexp` with a loose pattern accepts any workflow in the repo, and dropping the flag entirely accepts any valid Sigstore signature, including one from somebody else's workflow.
+Pinning the full identity is the point. `--certificate-identity-regexp` with a loose pattern accepts any workflow in the repo, and dropping the flag entirely accepts any valid Sigstore signature, including one from somebody else's workflow. If the check fails, cosign prints the value it actually found, which is the quickest way to see which ref signed.
 
 ## License
 
