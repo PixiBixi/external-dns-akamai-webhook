@@ -1,4 +1,4 @@
-.PHONY: help build lint test cover image clean
+.PHONY: help build lint test cover image snapshot clean
 .DEFAULT_GOAL := help
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
@@ -17,8 +17,11 @@ cover: ## Run tests and open the coverage report
 	go test -race -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out
 
-image: ## Build the container image
+image: ## Build the container image from source
 	docker build --build-arg VERSION=$(VERSION) -t $(IMAGE):$(VERSION) .
+
+snapshot: ## Build a goreleaser snapshot (dry-run release, nothing published)
+	goreleaser release --snapshot --clean
 
 clean: ## Remove build artifacts
 	rm -f external-dns-akamai-webhook coverage.out
