@@ -105,6 +105,31 @@ make snapshot  # full goreleaser dry run, nothing published
 
 Releases go through goreleaser: `svu` derives the version from the Conventional Commits since the last tag, and the run publishes archives for Linux and macOS, a multi-arch image on `ghcr.io` built by [ko](https://ko.build) with no Dockerfile involved, SBOMs, a cosign signature on the manifest list and a build provenance attestation.
 
+## Verifying a release
+
+Signatures are keyless: there is no public key to fetch, the identity is the workflow that published.
+
+```bash
+# Archives, through the signed checksums file
+cosign verify-blob \
+  --bundle checksums.txt.sigstore.json \
+  --certificate-identity-regexp 'https://github.com/PixiBixi/external-dns-akamai-webhook/.*' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  checksums.txt
+sha256sum -c checksums.txt --ignore-missing
+
+# Image
+cosign verify \
+  --certificate-identity-regexp 'https://github.com/PixiBixi/external-dns-akamai-webhook/.*' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  ghcr.io/pixibixi/external-dns-akamai-webhook:<tag>
+
+# How it was built, rather than who published it
+gh attestation verify <archive>.tar.gz --repo PixiBixi/external-dns-akamai-webhook
+```
+
+Passing `--certificate-identity-regexp` matters: without it any valid Sigstore signature is accepted, including one from somebody else's workflow.
+
 ## License
 
 Apache 2.0. The Edge DNS provider logic in `internal/akamai/` derives from the in-tree provider in kubernetes-sigs/external-dns and keeps its original copyright header. See [NOTICE](NOTICE).
