@@ -259,9 +259,10 @@ func (p *Provider) update(ctx context.Context, zoneMap provider.ZoneIDName, endp
 		// PUT replaces the recordset addressed by name and type, and both the TTL and
 		// the rdata come from the endpoint, so reading the record back buys nothing.
 		//
-		// Not UpdateRecordSets: that maps to PUT /zones/{zone}/recordsets, which
-		// replaces the zone's entire collection. Batching updates through it would
-		// delete every record not included. Do not "optimise" this into a batch.
+		// Not UpdateRecordSets: it maps to PUT /zones/{zone}/recordsets, which the
+		// Edge DNS reference defines as "Replaces all record sets that currently
+		// exist with the list provided". Batching updates through it deletes every
+		// record the batch omits. Do NOT turn this loop into one call.
 		ttl := ttlAsInt(ep.RecordTTL)
 		err := p.client.UpdateRecord(ctx, dns.UpdateRecordRequest{
 			Record: &dns.RecordBody{
