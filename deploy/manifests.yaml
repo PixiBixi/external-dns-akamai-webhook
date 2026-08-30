@@ -21,6 +21,10 @@ rules:
   - apiGroups: [""]
     resources: ["services", "endpoints", "pods"]
     verbs: ["get", "watch", "list"]
+  # ExternalDNS reads EndpointSlices, not the deprecated Endpoints, since v0.22.
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
+    verbs: ["get", "watch", "list"]
   - apiGroups: ["extensions", "networking.k8s.io"]
     resources: ["ingresses"]
     verbs: ["get", "watch", "list"]
@@ -168,3 +172,12 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: [ALL]
+
+# Annotating a Service or an Ingress, since ExternalDNS v0.22:
+#
+#   external-dns.kubernetes.io/hostname: app.example.com
+#   external-dns.kubernetes.io/ttl: "300"
+#
+# The prefix lost its `alpha` in v0.22. Most examples still carry
+# external-dns.alpha.kubernetes.io/, which v0.22 silently ignores: the source
+# logs "No endpoints could be generated" and nothing is ever created.

@@ -52,6 +52,7 @@ Either set the four credential flags, or point at an `.edgerc` file. Mixing them
 | `--zones-cache-duration` | `AKAMAI_WEBHOOK_ZONES_CACHE_DURATION` | `0s` | Reuse the zone listing for this long. `0s` lists on every call |
 | `--akamai-request-limit` | `AKAMAI_REQUEST_LIMIT` | SDK default | Cap on concurrent Edge DNS requests |
 | `--dry-run` | `AKAMAI_WEBHOOK_DRY_RUN` | `false` | Log the changes without writing them |
+
 | `--provider-addr` | `AKAMAI_WEBHOOK_PROVIDER_ADDR` | `127.0.0.1:8888` | Webhook API listen address |
 | `--health-addr` | `AKAMAI_WEBHOOK_HEALTH_ADDR` | `0.0.0.0:8080` | `/healthz` and `/metrics` listen address |
 | `--read-timeout` | `AKAMAI_WEBHOOK_READ_TIMEOUT` | `60s` | Maximum time to read a request |
@@ -64,6 +65,13 @@ Either set the four credential flags, or point at an `.edgerc` file. Mixing them
 | `--version` | | | Print the version and exit |
 
 A flag always beats its environment variable.
+
+> [!WARNING]
+> `--dry-run` on ExternalDNS does **not** stop this provider from writing. ExternalDNS
+> logs `running in dry-run mode. No changes to DNS records will be made.` and then calls
+> `ApplyChanges` anyway: honouring dry-run is the provider's job, and a webhook provider
+> is never told. Set `--dry-run` here, on the webhook, or the records get created while
+> the controller says they will not.
 
 `--zones-cache-duration` must stay below the rate at which zones are added to the account. A zone created after the last refresh is invisible to ExternalDNS until the cache expires.
 

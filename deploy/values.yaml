@@ -107,3 +107,12 @@ resources:
     memory: 64Mi
   limits:
     memory: 256Mi
+
+# Annotating a Service or an Ingress, since ExternalDNS v0.22:
+#
+#   external-dns.kubernetes.io/hostname: app.example.com
+#   external-dns.kubernetes.io/ttl: "300"
+#
+# The prefix lost its `alpha` in v0.22. Most examples still carry
+# external-dns.alpha.kubernetes.io/, which v0.22 silently ignores: the source
+# logs "No endpoints could be generated" and nothing is ever created.
