@@ -26,6 +26,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/PixiBixi/external-dns-akamai-webhook/internal/logsafe"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -191,7 +193,7 @@ func (p *Provider) create(ctx context.Context, zoneMap provider.ZoneIDName, endp
 				ttlAsInt(ep.RecordTTL),
 				cleanTargets(ep.RecordType, ep.Targets...),
 			))
-			log.WithFields(log.Fields{"zone": zoneName, "record": ep.DNSName, "type": ep.RecordType}).Info("creating recordset")
+			log.WithFields(log.Fields{"zone": logsafe.String(zoneName), "record": logsafe.String(ep.DNSName), "type": logsafe.String(ep.RecordType)}).Info("creating recordset")
 		}
 
 		if p.dryRun {
@@ -214,10 +216,10 @@ func (p *Provider) delete(ctx context.Context, zoneMap provider.ZoneIDName, endp
 	for _, ep := range endpoints {
 		zoneName, _ := zoneMap.FindZone(ep.DNSName)
 		if zoneName == "" {
-			log.Debugf("skipping deletion of %s %s: outside the configured zones", ep.RecordType, ep.DNSName)
+			log.Debugf("skipping deletion of %s %s: outside the configured zones", logsafe.String(ep.RecordType), logsafe.String(ep.DNSName))
 			continue
 		}
-		log.WithFields(log.Fields{"zone": zoneName, "record": ep.DNSName, "type": ep.RecordType}).Info("deleting recordset")
+		log.WithFields(log.Fields{"zone": logsafe.String(zoneName), "record": logsafe.String(ep.DNSName), "type": logsafe.String(ep.RecordType)}).Info("deleting recordset")
 
 		if p.dryRun {
 			continue
@@ -232,7 +234,7 @@ func (p *Provider) delete(ctx context.Context, zoneMap provider.ZoneIDName, endp
 		})
 		if err != nil {
 			if isNotFound(err) {
-				log.Debugf("%s %s was already absent", ep.RecordType, ep.DNSName)
+				log.Debugf("%s %s was already absent", logsafe.String(ep.RecordType), logsafe.String(ep.DNSName))
 				continue
 			}
 			return fmt.Errorf("deleting %s %s in zone %s: %w", ep.RecordType, ep.DNSName, zoneName, err)
@@ -246,10 +248,10 @@ func (p *Provider) update(ctx context.Context, zoneMap provider.ZoneIDName, endp
 	for _, ep := range endpoints {
 		zoneName, _ := zoneMap.FindZone(ep.DNSName)
 		if zoneName == "" {
-			log.Debugf("skipping update of %s %s: outside the configured zones", ep.RecordType, ep.DNSName)
+			log.Debugf("skipping update of %s %s: outside the configured zones", logsafe.String(ep.RecordType), logsafe.String(ep.DNSName))
 			continue
 		}
-		log.WithFields(log.Fields{"zone": zoneName, "record": ep.DNSName, "type": ep.RecordType}).Info("updating recordset")
+		log.WithFields(log.Fields{"zone": logsafe.String(zoneName), "record": logsafe.String(ep.DNSName), "type": logsafe.String(ep.RecordType)}).Info("updating recordset")
 
 		if p.dryRun {
 			continue

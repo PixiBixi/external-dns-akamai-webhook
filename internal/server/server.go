@@ -28,6 +28,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/PixiBixi/external-dns-akamai-webhook/internal/logsafe"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -213,7 +215,7 @@ func (s *Server) decode(w http.ResponseWriter, req *http.Request, into any) bool
 		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
 			status = http.StatusRequestEntityTooLarge
 		}
-		log.Errorf("decoding the request body: %v", err)
+		log.Errorf("decoding the request body: %s", logsafe.Err(err))
 		writeError(w, status, "malformed request body")
 		return false
 	}
@@ -224,7 +226,7 @@ func (s *Server) decode(w http.ResponseWriter, req *http.Request, into any) bool
 // fail maps a provider error to a status code ExternalDNS will act on: 5xx for
 // something worth retrying, 4xx for something that will fail again identically.
 func (s *Server) fail(w http.ResponseWriter, what string, err error) {
-	log.Errorf("%s: %v", what, err)
+	log.Errorf("%s: %s", what, logsafe.Err(err))
 
 	status := http.StatusInternalServerError
 	if r, ok := s.opts.Provider.(Retryable); ok && !r.Retryable(err) {

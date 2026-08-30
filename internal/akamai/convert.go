@@ -22,6 +22,8 @@ import (
 	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/dns"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/PixiBixi/external-dns-akamai-webhook/internal/logsafe"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -95,7 +97,7 @@ func ttlAsInt(src endpoint.TTL) int {
 // is one ExternalDNS does not manage.
 func recordSetToEndpoint(rs dns.RecordSet) (*endpoint.Endpoint, bool) {
 	if !provider.SupportedRecordType(rs.Type) {
-		log.Debugf("skipping %s %s: record type not supported", rs.Type, rs.Name)
+		log.Debugf("skipping %s %s: record type not supported", logsafe.String(rs.Type), logsafe.String(rs.Name))
 		return nil, false
 	}
 
@@ -114,7 +116,7 @@ func changesByZone(zoneMap provider.ZoneIDName, endpoints []*endpoint.Endpoint) 
 	for _, ep := range endpoints {
 		zone, _ := zoneMap.FindZone(ep.DNSName)
 		if zone == "" {
-			log.Debugf("skipping %s %s: outside the configured zones", ep.RecordType, ep.DNSName)
+			log.Debugf("skipping %s %s: outside the configured zones", logsafe.String(ep.RecordType), logsafe.String(ep.DNSName))
 			continue
 		}
 		byZone[zone] = append(byZone[zone], ep)
