@@ -107,28 +107,32 @@ Releases go through goreleaser: `svu` derives the version from the Conventional 
 
 ## Verifying a release
 
-Signatures are keyless: there is no public key to fetch, the identity is the workflow that published.
+Signatures are keyless: there is no public key to fetch, the identity is the workflow that published. Substitute the tag you are verifying in both the identity and the artifact.
 
 ```bash
+TAG=v0.1.0
+IDENTITY="https://github.com/PixiBixi/external-dns-akamai-webhook/.github/workflows/release.yml@refs/tags/${TAG}"
+ISSUER=https://token.actions.githubusercontent.com
+
 # Archives, through the signed checksums file
 cosign verify-blob \
+  --certificate-identity "${IDENTITY}" \
+  --certificate-oidc-issuer "${ISSUER}" \
   --bundle checksums.txt.sigstore.json \
-  --certificate-identity-regexp 'https://github.com/PixiBixi/external-dns-akamai-webhook/.*' \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   checksums.txt
-sha256sum -c checksums.txt --ignore-missing
+sha256sum --ignore-missing -c checksums.txt
 
 # Image
 cosign verify \
-  --certificate-identity-regexp 'https://github.com/PixiBixi/external-dns-akamai-webhook/.*' \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  ghcr.io/pixibixi/external-dns-akamai-webhook:<tag>
+  --certificate-identity "${IDENTITY}" \
+  --certificate-oidc-issuer "${ISSUER}" \
+  ghcr.io/pixibixi/external-dns-akamai-webhook:"${TAG}"
 
 # How it was built, rather than who published it
 gh attestation verify <archive>.tar.gz --repo PixiBixi/external-dns-akamai-webhook
 ```
 
-Passing `--certificate-identity-regexp` matters: without it any valid Sigstore signature is accepted, including one from somebody else's workflow.
+Pinning the full identity down to the tag is the point. `--certificate-identity-regexp` with a loose pattern accepts any workflow in the repo, and dropping the flag entirely accepts any valid Sigstore signature, including one from somebody else's workflow.
 
 ## License
 
