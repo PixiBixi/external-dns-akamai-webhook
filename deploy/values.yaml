@@ -1,0 +1,109 @@
+# Values for the ExternalDNS Helm chart (kubernetes-sigs/external-dns), running
+# this webhook as a sidecar.
+#
+#   helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/
+#   helm upgrade --install external-dns external-dns/external-dns \
+#     -n external-dns --create-namespace -f deploy/values.yaml
+#
+# The Secret it expects:
+#
+#   kubectl -n external-dns create secret generic akamai-edgedns \
+#     --from-literal=AKAMAI_SERVICECONSUMERDOMAIN=... \
+#     --from-literal=AKAMAI_CLIENT_TOKEN=... \
+#     --from-literal=AKAMAI_CLIENT_SECRET=... \
+#     --from-literal=AKAMAI_ACCESS_TOKEN=...
+
+provider:
+  name: webhook
+  webhook:
+    image:
+      repository: ghcr.io/pixibixi/external-dns-akamai-webhook
+      tag: v0.1.0
+      pullPolicy: IfNotPresent
+
+    env:
+      # Credentials never become command-line arguments: those show up in the pod
+      # spec and in every `kubectl describe`.
+      - name: AKAMAI_SERVICECONSUMERDOMAIN
+        valueFrom:
+          secretKeyRef:
+            name: akamai-edgedns
+            key: AKAMAI_SERVICECONSUMERDOMAIN
+      - name: AKAMAI_CLIENT_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: akamai-edgedns
+            key: AKAMAI_CLIENT_TOKEN
+      - name: AKAMAI_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: akamai-edgedns
+            key: AKAMAI_CLIENT_SECRET
+      - name: AKAMAI_ACCESS_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: akamai-edgedns
+            key: AKAMAI_ACCESS_TOKEN
+
+    args:
+      - --domain-filter=example.com
+      # Reuses the zone listing between the read and the write of one sync. Keep it
+      # below the rate at which zones are added, or a new zone stays invisible
+      # until it expires.
+      - --zones-cache-duration=5m
+      - --log-format=json
+
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi
+
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65532
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop: [ALL]
+      seccompProfile:
+        type: RuntimeDefault
+
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: http-webhook
+      initialDelaySeconds: 10
+      periodSeconds: 30
+    readinessProbe:
+      httpGet:
+        path: /healthz
+        port: http-webhook
+      initialDelaySeconds: 5
+      periodSeconds: 10
+
+# Akamai is authoritative for these zones, so a stale record is a real outage.
+# Switch to upsert-only for the first runs if you want to watch before deleting.
+policy: sync
+registry: txt
+txtOwnerID: external-dns
+txtPrefix: extdns-
+
+sources:
+  - ingress
+  - service
+
+# Edge DNS quotas are per account, not per cluster. One sync a minute is plenty
+# for ingress churn and leaves headroom for anything else using the same account.
+interval: 1m
+
+serviceMonitor:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 20m
+    memory: 64Mi
+  limits:
+    memory: 256Mi

@@ -1,0 +1,11 @@
+external-dns-akamai-webhook
+Copyright 2026 Jeremy Delgado
+
+This product includes software developed by
+The Kubernetes Authors (https://github.com/kubernetes-sigs/external-dns).
+
+The Akamai Edge DNS provider logic in internal/akamai/ is derived from the
+in-tree provider that lived at provider/akamai/ in kubernetes-sigs/external-dns
+until it was removed in PR #6485, and carries the original copyright and Apache
+License 2.0 header. It has since been ported from AkamaiOPEN-edgegrid-golang
+v1.2.2 to v13 and reworked.

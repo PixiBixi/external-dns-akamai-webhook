@@ -1,0 +1,56 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: standard # govet, staticcheck, errcheck, ineffassign, unused
+  enable:
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - containedctx
+    - durationcheck
+    - errorlint
+    - forcetypeassert
+    - gocritic
+    - gosec
+    - misspell
+    - modernize
+    - nilerr
+    - noctx
+    - perfsprint
+    - revive
+    - unconvert
+    - usestdlibvars
+  settings:
+    gocritic:
+      enabled-tags:
+        - performance
+      settings:
+        hugeParam:
+          # Default is 80, which flags the config and credential structs (128 to
+          # 288 bytes) copied once at start-up, and the SDK request structs (88
+          # bytes) copied once per Edge DNS round trip. Against an HTTP call to
+          # Akamai those copies are noise; pointers would only invite accidental
+          # mutation of shared configuration. 320 keeps the check pointed at
+          # anything genuinely large in a loop.
+          sizeThreshold: 320
+    revive:
+      rules:
+        - name: package-comments
+          disabled: true
+        # internal/ packages are not a public API.
+        - name: exported
+          disabled: true
+  exclusions:
+    rules:
+      # gosec on tests is noisy (file perms, hardcoded credentials in fixtures)
+      # and not a runtime concern.
+      - path: _test\.go
+        linters:
+          - gosec
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
