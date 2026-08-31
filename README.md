@@ -114,7 +114,7 @@ Releases go through goreleaser: `svu` derives the version from the Conventional 
 
 ## Verifying a release
 
-Signatures are keyless: there is no public key to fetch, the identity is the workflow that published. Substitute the tag you are verifying in both the identity and the artifact.
+Signatures are keyless: there is no public key to fetch, the identity is the workflow that published. Substitute the tag you are verifying in the artifact only: the identity stays pinned to the ref the release ran on.
 
 ```bash
 TAG=v0.1.0
