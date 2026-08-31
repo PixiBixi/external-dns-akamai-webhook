@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/dns"
@@ -123,10 +124,24 @@ func applyOverrides(cfg *edgegrid.Config, creds Credentials) {
 
 const headerToSign = "X-External-DNS"
 
-// isNotFound reports whether the Edge DNS API answered 404.
+// transientProblemType is the problem Akamai reports when its gateway could not
+// reach the Edge DNS origin. It arrives as a 404 with nothing actually missing, so
+// classifying it on the status alone kills ExternalDNS. Keep it this narrow: a wrong
+// host or contract also answers 404 and must stay a loud, permanent failure.
+const transientProblemType = "resource-impl/forward-origin-error"
+
+// isTransientProblem reports whether the error is an Akamai gateway fault dressed
+// as a permanent one.
+func isTransientProblem(err error) bool {
+	apiErr := &dns.Error{}
+	return errors.As(err, &apiErr) && strings.HasSuffix(apiErr.Type, transientProblemType)
+}
+
+// isNotFound reports whether the Edge DNS API answered 404 because the resource is
+// absent, rather than because the gateway faulted.
 func isNotFound(err error) bool {
 	apiErr := &dns.Error{}
-	return errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound
+	return errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound && !isTransientProblem(err)
 }
 
 // isRetryable reports whether an error is worth a 5xx to ExternalDNS, which retries
@@ -136,6 +151,9 @@ func isRetryable(err error) bool {
 	apiErr := &dns.Error{}
 	if !errors.As(err, &apiErr) {
 		// Transport-level failures: connection reset, timeout, DNS. Worth a retry.
+		return true
+	}
+	if isTransientProblem(err) {
 		return true
 	}
 

@@ -117,6 +117,14 @@ func apiError(status int) error {
 	return &dns.Error{StatusCode: status}
 }
 
+// forwardOriginProblem is the problem type Akamai answers when its gateway could
+// not reach the Edge DNS origin. Verbatim from a production log.
+const forwardOriginProblem = "https://problems.luna.akamaiapis.net/-/resource-impl/forward-origin-error"
+
+func apiProblem(status int, problemType string) error {
+	return &dns.Error{StatusCode: status, Type: problemType}
+}
+
 func newProvider(t *testing.T, s *stub, zones []string, cacheDuration time.Duration) *Provider {
 	t.Helper()
 
@@ -233,6 +241,19 @@ func TestApplyChangesTolerates404OnDelete(t *testing.T) {
 	assert.NoError(t, p.ApplyChanges(t.Context(), changes))
 }
 
+// A 404 from the gateway is a fault, not an absent record: swallowing it would
+// report a delete that never happened.
+func TestApplyChangesFailsOnGatewayFaultDuringDelete(t *testing.T) {
+	s := newStub("example.com")
+	s.failWith["DeleteRecord"] = apiProblem(http.StatusNotFound, forwardOriginProblem)
+	p := newProvider(t, s, []string{"example.com"}, 0)
+
+	changes := &plan.Changes{
+		Delete: []*endpoint.Endpoint{endpoint.NewEndpoint("gone.example.com", endpoint.RecordTypeA, "10.0.0.1")},
+	}
+	assert.Error(t, p.ApplyChanges(t.Context(), changes))
+}
+
 func TestApplyChangesSkipsEndpointsOutsideTheZones(t *testing.T) {
 	s := newStub("example.com")
 	p := newProvider(t, s, []string{"example.com"}, 0)
@@ -315,6 +336,8 @@ func TestRetryable(t *testing.T) {
 		{name: "unauthorized", err: apiError(http.StatusUnauthorized), want: false},
 		{name: "rejected request", err: apiError(http.StatusBadRequest), want: false},
 		{name: "not found", err: apiError(http.StatusNotFound), want: false},
+		{name: "gateway could not reach the origin", err: apiProblem(http.StatusNotFound, forwardOriginProblem), want: true},
+		{name: "genuine 404 carrying another problem type", err: apiProblem(http.StatusNotFound, "https://problems.luna.akamaiapis.net/-/gw/denied"), want: false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.want, p.Retryable(tc.err))
