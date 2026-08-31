@@ -29,8 +29,7 @@ Two validations run before the listeners start, both in
 ## Observability
 
 `/healthz` on the health port answers 200 unconditionally: it reports that the
-process is serving, not that Edge DNS is reachable. Wiring it to Edge DNS would
-restart the pod during an Akamai outage, which fixes nothing.
+process is serving, not that Edge DNS is reachable.
 
 Metrics exposed by this process, all on `/metrics` of the health port:
 
