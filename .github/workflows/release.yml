@@ -5,11 +5,7 @@ on:
     branches: [main]
     tags: ["v*"]
 
-permissions:
-  contents: write
-  packages: write       # push the image to ghcr
-  id-token: write       # keyless identity for the cosign signature and the attestation
-  attestations: write   # store the attestation on the repo
+permissions: {}
 
 concurrency:
   group: release
@@ -18,7 +14,16 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      packages: write       # push the image to ghcr
+      id-token: write       # keyless identity for the cosign signature and the attestation
+      attestations: write   # store the attestation on the repo
     steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
