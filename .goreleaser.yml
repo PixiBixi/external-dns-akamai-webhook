@@ -104,8 +104,19 @@ snapshot:
 
 changelog:
   sort: asc
+  # -1 drops the commit SHA from the entry. A list of 40-character hashes is a
+  # git log in disguise, which is what release notes are meant not to be.
+  abbrev: -1
   filters:
-    exclude: ['^docs:', '^test:', '^chore:', 'typo']
+    # The scope is optional in Conventional Commits and these patterns must
+    # allow it: '^docs:' never matched 'docs(wiki):', so every excluded type
+    # was leaking into the notes.
+    exclude:
+      - '^docs(\([^)]*\))?:'
+      - '^test(\([^)]*\))?:'
+      - '^chore(\([^)]*\))?:'
+      - '^ci(\([^)]*\))?:'
+      - 'typo'
   groups:
     - title: Features
       regexp: '^feat'
@@ -121,6 +132,16 @@ release:
     owner: PixiBixi
     name: external-dns-akamai-webhook
   name_template: "{{.ProjectName}} {{.Version}}"
+  header: |
+    Run as a sidecar of the ExternalDNS pod:
+
+    ```
+    ghcr.io/pixibixi/external-dns-akamai-webhook:{{ .Version }}
+    ```
+
+    [Install](https://github.com/PixiBixi/external-dns-akamai-webhook#install) -
+    [Flags](https://github.com/PixiBixi/external-dns-akamai-webhook#flags) -
+    [Verifying this release](https://github.com/PixiBixi/external-dns-akamai-webhook#verifying-a-release)
   draft: false
   prerelease: auto
   mode: replace
