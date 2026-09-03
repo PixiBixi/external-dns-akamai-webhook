@@ -48,8 +48,8 @@ func newRecordSet(dnsName, recordType string, ttl int, targets []string) dns.Rec
 // cleanTargets preps recordset rdata for Edge DNS.
 //
 // CNAME and SRV rdata must not carry the trailing dot. TXT rdata must be quoted,
-// and the API mangles quotes embedded in an owner value, so those are swapped for
-// backticks on the way in and swapped back by trimTxtRdata on the way out.
+// and the API mangles an embedded quote, so those are swapped for backticks on the
+// way in and swapped back by trimTxtRdata on the way out.
 func cleanTargets(rtype string, targets ...string) []string {
 	switch rtype {
 	case endpoint.RecordTypeCNAME, endpoint.RecordTypeSRV:
@@ -59,9 +59,10 @@ func cleanTargets(rtype string, targets ...string) []string {
 	case endpoint.RecordTypeTXT:
 		for idx, target := range targets {
 			target = strings.Trim(target, "\"")
-			if strings.Contains(target, "owner") && strings.Contains(target, "\"") {
-				target = strings.ReplaceAll(target, "\"", "`")
-			}
+			// Every interior quote is substituted, not only the ones in an owner
+			// value: a target the substitution skips is wrapped into "a"b" and
+			// escapes its own quoting. See FuzzCleanTargetsTXT.
+			target = strings.ReplaceAll(target, "\"", "`")
 			targets[idx] = "\"" + target + "\""
 		}
 	}
