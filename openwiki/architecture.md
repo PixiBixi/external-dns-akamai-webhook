@@ -134,6 +134,14 @@ reference defines as "Replaces all record sets that currently exist with the lis
 provided". Batching updates through it deletes every record the batch omits. Do not
 turn that loop into one call.
 
+Every write path resolves its zone through `zoneFor` (`internal/akamai/convert.go`),
+which returns a zone only when `ZoneIDName.FindZone` matches **and** the domain filter
+matches. The filter is re-checked here rather than trusted from `Records`, because
+`ApplyChanges` arrives over a socket: a name the operator excluded but which sits
+inside a managed zone would otherwise reach Edge DNS on the strength of `FindZone`
+alone. That check is what keeps `--domain-filter` a write boundary and not just a
+read filter, so do not remove it from `create`, `update`, `delete` or `changesByZone`.
+
 Neither the update nor the delete path reads the record back first: both address the
 record by name and type, and the endpoint carries both the TTL and the rdata, so a
 read would buy nothing. `internal/akamai/provider_test.go` asserts the read count is
@@ -153,13 +161,15 @@ quirk:
   the range Edge DNS accepts.
 - **CNAME and SRV** rdata must not carry the trailing dot, so `cleanTargets` strips
   it.
-- **TXT** rdata must be quoted. The API also mangles quotes embedded in an owner
-  value, so those are swapped for backticks on the way in (`cleanTargets`) and
-  swapped back on the way out (`trimTxtRdata`). The registry TXT records ExternalDNS
-  writes are exactly the values affected, so breaking this breaks ownership.
+- **TXT** rdata must be quoted, and the API mangles an embedded quote, so
+  `cleanTargets` swaps **every** interior quote for a backtick and `trimTxtRdata`
+  swaps them back on the way out. Unconditionally: a target the substitution skips
+  gets wrapped into `"a"b"` and escapes its own quoting. `FuzzCleanTargetsTXT` is
+  what holds that property. The registry TXT records ExternalDNS writes are exactly
+  the values affected, so breaking this breaks ownership.
 - Record types ExternalDNS does not manage are skipped on read, not errored.
-- `changesByZone` drops endpoints matching no zone, because there is nowhere to
-  write them.
+- `changesByZone` drops endpoints with no matching zone or no domain filter match,
+  because there is nowhere to write them and nothing that authorises writing them.
 
 ## Metrics and logs
 
