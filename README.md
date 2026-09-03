@@ -1,5 +1,7 @@
 # external-dns-akamai-webhook
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14436/badge)](https://www.bestpractices.dev/projects/14436)
+
 An [ExternalDNS](https://github.com/kubernetes-sigs/external-dns) webhook provider for Akamai Edge DNS.
 
 ExternalDNS dropped its in-tree Akamai provider in [#6485](https://github.com/kubernetes-sigs/external-dns/pull/6485). This is that provider, ported to the current Edge DNS SDK and run out of tree, which is the [supported way](https://kubernetes-sigs.github.io/external-dns/latest/docs/tutorials/webhook-provider/) to add a provider now.
