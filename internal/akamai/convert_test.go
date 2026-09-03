@@ -17,6 +17,7 @@ limitations under the License.
 package akamai
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/dns"
@@ -70,6 +71,14 @@ func TestCleanTargets(t *testing.T) {
 			rtype:   endpoint.RecordTypeTXT,
 			targets: []string{`external-dns/owner="default",heritage=external-dns`},
 			want:    []string{"\"external-dns/owner=`default`,heritage=external-dns\""},
+		},
+		{
+			// Found by FuzzCleanTargetsTXT: before the owner guard was dropped this
+			// came back as "a"b", a value escaping its own quoting.
+			name:    "a quote outside an owner value is escaped too",
+			rtype:   endpoint.RecordTypeTXT,
+			targets: []string{`a"b`},
+			want:    []string{"\"a`b\""},
 		},
 		{
 			// See TestTxtRoundTripIsLossyOnATrailingQuote: Trim eats the closing
@@ -196,4 +205,36 @@ func TestChangesByZoneWithoutFilterKeepsEverything(t *testing.T) {
 
 	assert.Len(t, changesByZone(zoneMap, &endpoint.DomainFilter{}, endpoints)["example.com"], 1)
 	assert.Len(t, changesByZone(zoneMap, nil, endpoints)["example.com"], 1)
+}
+
+// FuzzCleanTargetsTXT checks that TXT rdata leaves cleanTargets as one well-formed
+// quoted string. Targets reach this function from the ApplyChanges body, so a
+// value that breaks out of its own quoting would be rdata we did not intend to
+// write.
+func FuzzCleanTargetsTXT(f *testing.F) {
+	for _, seed := range []string{
+		"",
+		"plain",
+		"\"quoted\"",
+		"heritage=external-dns,external-dns/owner=default",
+		"heritage=external-dns,external-dns/owner=\"default\"",
+		"a\"b",
+		"owner\"",
+		"\"",
+		"\"\"",
+		"a`b",
+	} {
+		f.Add(seed)
+	}
+
+	f.Fuzz(func(t *testing.T, target string) {
+		got := cleanTargets(endpoint.RecordTypeTXT, target)[0]
+
+		if len(got) < 2 || got[0] != '"' || got[len(got)-1] != '"' {
+			t.Fatalf("cleanTargets(TXT, %q) = %q, not a quoted string", target, got)
+		}
+		if inner := got[1 : len(got)-1]; strings.Contains(inner, "\"") {
+			t.Fatalf("cleanTargets(TXT, %q) = %q, the value escapes its own quoting", target, got)
+		}
+	})
 }
