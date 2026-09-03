@@ -114,3 +114,47 @@ func TestApplyChangesRejectsAForeignContentType(t *testing.T) {
 	assert.Equal(t, http.StatusUnsupportedMediaType, rec.Code)
 	assert.Nil(t, f.applied)
 }
+
+// FuzzNegotiate drives the Accept and Content-Type parser with arbitrary bytes.
+// Both headers arrive unauthenticated on the provider socket and are parsed before
+// anything else, so this is the first code an unexpected input reaches.
+func FuzzNegotiate(f *testing.F) {
+	for _, seed := range []string{
+		"",
+		"*/*",
+		"application/*",
+		api.MediaTypeFormatAndVersion,
+		mediaTypeBase,
+		mediaTypeBase + ";version=1",
+		mediaTypeBase + ";version=\"1\"",
+		mediaTypeBase + ";version=2",
+		mediaTypeBase + ";charset=utf-8;version=1",
+		"text/html, " + mediaTypeBase + ";version=1",
+		";;;;",
+		"=;=;=",
+		mediaTypeBase + ";version=",
+	} {
+		f.Add(seed)
+	}
+
+	f.Fuzz(func(t *testing.T, header string) {
+		wide, _ := negotiate(header, true)
+		narrow, unsupported := negotiate(header, false)
+
+		// Allowing the wildcard can only widen what is accepted. If this ever
+		// inverts, a body labelled "*/*" would be parsed as the webhook format.
+		if narrow && !wide {
+			t.Fatalf("negotiate(%q) accepted without the wildcard but rejected with it", header)
+		}
+		// A reported version is echoed into the 415 body, so it must come from the
+		// header rather than be synthesised.
+		if unsupported != "" && !strings.Contains(header, unsupported) {
+			t.Fatalf("negotiate(%q) reported version %q that is not in the header", header, unsupported)
+		}
+		// The rejection path must never name the version this provider speaks, or
+		// the operator reads "unsupported version 1" while the server speaks 1.
+		if !narrow && unsupported == supportedVersion {
+			t.Fatalf("negotiate(%q) rejected the header while reporting the supported version", header)
+		}
+	})
+}
