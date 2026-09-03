@@ -170,6 +170,11 @@ Snapshot builds skip the changelog pipe entirely, so `goreleaser release --snaps
 produces no `CHANGELOG.md` and cannot be used to preview these notes. The first
 proof of a change here is the next real tag.
 
+The header that precedes the commit list is a static block in `.goreleaser.yml`
+(`release.header`): the `ghcr.io` image reference to pull, and links back to the
+README's Install, Flags and Verifying a release sections. It exists so a release
+page is self-sufficient without repeating that content in the changelog itself.
+
 Signatures are keyless, so there is no public key to fetch: the identity is the
 workflow that published. The verification commands, including the trap that the
 identity stays pinned to the ref the release ran on rather than the tag, are in the
