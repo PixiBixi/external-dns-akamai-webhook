@@ -102,6 +102,8 @@ TTL comes from the endpoint, falling back to 600 seconds.
 
 ## Development
 
+Pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers the commit conventions, what CI enforces and how to run the fuzz targets.
+
 ```bash
 make test      # go test -race ./...
 make lint      # golangci-lint run
