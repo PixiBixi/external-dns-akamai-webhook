@@ -65,8 +65,19 @@ make cover  # coverage report in the browser
 
 CI runs `go mod verify`, `go build ./...` and `go test -race ./...` on
 `ubuntu-24.04` (`.github/workflows/ci.yml`), with golangci-lint pinned to an exact
-version in a separate workflow. Every action is pinned to a SHA with the version in
-a trailing comment, and `zizmor` lints the workflows themselves.
+version in a separate workflow. Two further gates answer on the pull request as
+review suggestions rather than a plain failure: `go-format.yml` runs goimports
+over every `.go` file, and `markdownlint.yml` lints the Markdown, this wiki
+included.
+
+Every workflow follows one hardening shape and a new one is expected to copy it:
+actions pinned to a SHA with the version in a trailing comment,
+`persist-credentials: false` on checkout, `permissions: {}` at the workflow level
+with the writes declared on the job that needs them, and
+`step-security/harden-runner` in audit mode as the first step, which records the
+outbound calls the job makes. `zizmor` lints the workflows themselves and
+Scorecard scores the result. The `Dockerfile` base images are pinned by digest for
+the same reason.
 
 What the test files guard:
 
@@ -109,3 +120,7 @@ identity stays pinned to the ref the release ran on rather than the tag, are in 
 
 Commit scopes follow the packages: `fix(akamai)`, `fix(log)`, `feat`, `docs`,
 `build(release)`, `ci`. PR titles are validated by a workflow.
+
+Only the latest release is patched, and vulnerabilities go through GitHub's
+private advisory form rather than a public issue
+([SECURITY.md](../SECURITY.md)).
