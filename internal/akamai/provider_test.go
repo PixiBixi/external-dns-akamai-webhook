@@ -344,3 +344,47 @@ func TestRetryable(t *testing.T) {
 		})
 	}
 }
+
+// An excluded name can still resolve to a managed zone, so FindZone alone lets it
+// through. ApplyChanges is reachable over a socket, so it re-checks the filter.
+func TestApplyChangesSkipsExcludedDomains(t *testing.T) {
+	s := newStub("example.com")
+	p := New(s, Config{DomainFilter: endpoint.NewDomainFilterWithExclusions(
+		[]string{"example.com"},
+		[]string{"secret.example.com"},
+	)})
+
+	changes := &plan.Changes{
+		Create:    []*endpoint.Endpoint{endpoint.NewEndpoint("a.secret.example.com", endpoint.RecordTypeA, "10.0.0.1")},
+		Delete:    []*endpoint.Endpoint{endpoint.NewEndpoint("b.secret.example.com", endpoint.RecordTypeA, "10.0.0.2")},
+		UpdateNew: []*endpoint.Endpoint{endpoint.NewEndpoint("c.secret.example.com", endpoint.RecordTypeA, "10.0.0.3")},
+	}
+	require.NoError(t, p.ApplyChanges(t.Context(), changes))
+
+	_, _, creates, updates, deletes := s.counts()
+	assert.Equal(t, 0, creates)
+	assert.Equal(t, 0, updates)
+	assert.Equal(t, 0, deletes)
+}
+
+// The same plan without the exclusion must still be written, so the guard above
+// is not just rejecting everything.
+func TestApplyChangesWritesNonExcludedDomains(t *testing.T) {
+	s := newStub("example.com")
+	p := New(s, Config{DomainFilter: endpoint.NewDomainFilterWithExclusions(
+		[]string{"example.com"},
+		[]string{"secret.example.com"},
+	)})
+
+	changes := &plan.Changes{
+		Create:    []*endpoint.Endpoint{endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "10.0.0.1")},
+		Delete:    []*endpoint.Endpoint{endpoint.NewEndpoint("b.example.com", endpoint.RecordTypeA, "10.0.0.2")},
+		UpdateNew: []*endpoint.Endpoint{endpoint.NewEndpoint("c.example.com", endpoint.RecordTypeA, "10.0.0.3")},
+	}
+	require.NoError(t, p.ApplyChanges(t.Context(), changes))
+
+	_, _, creates, updates, deletes := s.counts()
+	assert.Equal(t, 1, creates)
+	assert.Equal(t, 1, updates)
+	assert.Equal(t, 1, deletes)
+}
