@@ -36,6 +36,16 @@ archives:
 # The primary artifact is the image: this runs as a sidecar of the ExternalDNS
 # pod. ko cross-compiles and packs a distroless image without a Dockerfile, a
 # daemon or buildx, and publishes the multi-arch manifest itself.
+# goos: linux only. UPX decompresses the whole binary at every exec, which a
+# long-lived server pays once at start and a one-shot CLI would pay every run
+# (klens: 5.8 ms to 669 ms). See the goreleaser article on the wiki.
+upx:
+  - enabled: true
+    ids: [external-dns-akamai-webhook]
+    compress: best
+    lzma: true
+    goos: [linux]
+
 kos:
   - id: image
     build: external-dns-akamai-webhook
