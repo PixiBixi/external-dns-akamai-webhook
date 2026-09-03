@@ -64,8 +64,10 @@ make cover  # coverage report in the browser
 ```
 
 CI runs `go mod verify`, `go build ./...` and `go test -race ./...` on
-`ubuntu-24.04` (`.github/workflows/ci.yml`), with golangci-lint pinned to an exact
-version in a separate workflow. Two further gates answer on the pull request as
+`ubuntu-24.04` (`.github/workflows/ci.yml`), plus a `fuzz` job that runs each target
+for 60 seconds and uploads any crasher from `internal/**/testdata/fuzz/` as an
+artifact so the input can be replayed locally instead of re-found. golangci-lint is
+pinned to an exact version in a separate workflow. Two further gates answer on the pull request as
 review suggestions rather than a plain failure: `go-format.yml` runs goimports
 over every `.go` file, and `markdownlint.yml` lints the Markdown, this wiki
 included.
@@ -90,6 +92,21 @@ What the test files guard:
 | `internal/config/config_test.go` | Flag and environment precedence, the credential validation |
 | `internal/logsafe/logsafe_test.go` | Line break stripping |
 
+Two fuzz targets cover the parsers that read untrusted input. Their seed corpus runs
+as part of `make test`; only `-fuzz` looks for new inputs, and `-fuzz` takes one
+target at a time:
+
+```bash
+go test ./internal/server/ -run FuzzNegotiate -fuzz FuzzNegotiate -fuzztime 60s
+go test ./internal/akamai/ -run FuzzCleanTargetsTXT -fuzz FuzzCleanTargetsTXT -fuzztime 60s
+```
+
+`FuzzNegotiate` asserts two properties of `negotiate`: allowing the wildcard can only
+widen what is accepted, never invert, and the version echoed into a 415 body is always
+a substring of the header rather than something synthesised.
+`FuzzCleanTargetsTXT` asserts the invariant that makes TXT quoting safe: the result is
+quoted exactly once and carries no interior quote, whatever the input.
+
 There is also a read-only live suite behind a build tag, which needs real
 credentials and burns real API quota:
 
@@ -113,13 +130,20 @@ with no Dockerfile involved, SBOMs, a cosign signature on the manifest list and 
 build provenance attestation. `make image` builds from the `Dockerfile` instead, for
 local use only.
 
+The Linux binary is UPX-compressed (`.goreleaser.yml`), macOS is not. UPX decompresses
+the whole binary on every exec, a cost a long-lived server pays once at start-up and a
+one-shot CLI would pay on every run, so keep the `goos` restriction if the artifact
+list ever grows.
+
 Signatures are keyless, so there is no public key to fetch: the identity is the
 workflow that published. The verification commands, including the trap that the
 identity stays pinned to the ref the release ran on rather than the tag, are in the
 [README](../README.md#verifying-a-release).
 
 Commit scopes follow the packages: `fix(akamai)`, `fix(log)`, `feat`, `docs`,
-`build(release)`, `ci`. PR titles are validated by a workflow.
+`build(release)`, `ci`. PR titles are validated by a workflow. The contributor-facing
+version of all of this, including what a pull request has to carry, is in
+[CONTRIBUTING.md](../CONTRIBUTING.md).
 
 Only the latest release is patched, and vulnerabilities go through GitHub's
 private advisory form rather than a public issue
