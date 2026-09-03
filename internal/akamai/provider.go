@@ -195,7 +195,7 @@ func (p *Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) erro
 }
 
 func (p *Provider) create(ctx context.Context, zoneMap provider.ZoneIDName, endpoints []*endpoint.Endpoint) error {
-	for zoneName, eps := range changesByZone(zoneMap, endpoints) {
+	for zoneName, eps := range changesByZone(zoneMap, p.domainFilter, endpoints) {
 		sets := &dns.RecordSets{RecordSets: make([]dns.RecordSet, 0, len(eps))}
 		for _, ep := range eps {
 			sets.RecordSets = append(sets.RecordSets, newRecordSet(
@@ -225,8 +225,8 @@ func (p *Provider) create(ctx context.Context, zoneMap provider.ZoneIDName, endp
 
 func (p *Provider) delete(ctx context.Context, zoneMap provider.ZoneIDName, endpoints []*endpoint.Endpoint) error {
 	for _, ep := range endpoints {
-		zoneName, _ := zoneMap.FindZone(ep.DNSName)
-		if zoneName == "" {
+		zoneName, ok := zoneFor(zoneMap, p.domainFilter, ep)
+		if !ok {
 			log.Debugf("skipping deletion of %s %s: outside the configured zones", logsafe.String(ep.RecordType), logsafe.String(ep.DNSName))
 			continue
 		}
@@ -257,8 +257,8 @@ func (p *Provider) delete(ctx context.Context, zoneMap provider.ZoneIDName, endp
 
 func (p *Provider) update(ctx context.Context, zoneMap provider.ZoneIDName, endpoints []*endpoint.Endpoint) error {
 	for _, ep := range endpoints {
-		zoneName, _ := zoneMap.FindZone(ep.DNSName)
-		if zoneName == "" {
+		zoneName, ok := zoneFor(zoneMap, p.domainFilter, ep)
+		if !ok {
 			log.Debugf("skipping update of %s %s: outside the configured zones", logsafe.String(ep.RecordType), logsafe.String(ep.DNSName))
 			continue
 		}

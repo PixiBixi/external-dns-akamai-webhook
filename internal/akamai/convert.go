@@ -109,13 +109,27 @@ func recordSetToEndpoint(rs dns.RecordSet) (*endpoint.Endpoint, bool) {
 	), true
 }
 
+// zoneFor resolves the zone that will receive ep, reporting false when none will.
+//
+// The filter is re-checked here and not only in Records: ApplyChanges is fed over
+// a socket, so an excluded name sitting inside a managed zone would otherwise
+// reach Edge DNS on the strength of FindZone alone. Do NOT drop this check.
+func zoneFor(zoneMap provider.ZoneIDName, filter *endpoint.DomainFilter, ep *endpoint.Endpoint) (string, bool) {
+	zone, _ := zoneMap.FindZone(ep.DNSName)
+	if zone == "" || !filter.Match(ep.DNSName) {
+		return "", false
+	}
+
+	return zone, true
+}
+
 // changesByZone groups endpoints by the zone that contains them. Endpoints that
 // match no zone are dropped, since there is nowhere to write them.
-func changesByZone(zoneMap provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]*endpoint.Endpoint {
+func changesByZone(zoneMap provider.ZoneIDName, filter *endpoint.DomainFilter, endpoints []*endpoint.Endpoint) map[string][]*endpoint.Endpoint {
 	byZone := make(map[string][]*endpoint.Endpoint, len(zoneMap))
 	for _, ep := range endpoints {
-		zone, _ := zoneMap.FindZone(ep.DNSName)
-		if zone == "" {
+		zone, ok := zoneFor(zoneMap, filter, ep)
+		if !ok {
 			log.Debugf("skipping %s %s: outside the configured zones", logsafe.String(ep.RecordType), logsafe.String(ep.DNSName))
 			continue
 		}

@@ -164,9 +164,36 @@ func TestChangesByZone(t *testing.T) {
 		endpoint.NewEndpoint("orphan.elsewhere.org", endpoint.RecordTypeA, "10.0.0.4"),
 	}
 
-	got := changesByZone(zoneMap, endpoints)
+	got := changesByZone(zoneMap, &endpoint.DomainFilter{}, endpoints)
 
 	require.Len(t, got, 2, "the orphan has nowhere to go and is dropped")
 	assert.Len(t, got["a.example.com"], 2)
 	assert.Len(t, got["b.example.com"], 1)
+}
+
+func TestChangesByZoneHonoursExclusions(t *testing.T) {
+	zoneMap := provider.ZoneIDName{"example.com": "example.com"}
+	filter := endpoint.NewDomainFilterWithExclusions(
+		[]string{"example.com"},
+		[]string{"secret.example.com"},
+	)
+	endpoints := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "10.0.0.1"),
+		endpoint.NewEndpoint("api.secret.example.com", endpoint.RecordTypeA, "10.0.0.2"),
+	}
+
+	got := changesByZone(zoneMap, filter, endpoints)
+
+	require.Len(t, got["example.com"], 1, "the excluded name sits inside a managed zone but must not be written")
+	assert.Equal(t, "www.example.com", got["example.com"][0].DNSName)
+}
+
+func TestChangesByZoneWithoutFilterKeepsEverything(t *testing.T) {
+	zoneMap := provider.ZoneIDName{"example.com": "example.com"}
+	endpoints := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "10.0.0.1"),
+	}
+
+	assert.Len(t, changesByZone(zoneMap, &endpoint.DomainFilter{}, endpoints)["example.com"], 1)
+	assert.Len(t, changesByZone(zoneMap, nil, endpoints)["example.com"], 1)
 }
