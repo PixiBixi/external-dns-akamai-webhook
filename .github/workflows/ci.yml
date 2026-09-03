@@ -30,3 +30,34 @@ jobs:
         run: go build -v ./...
       - name: Tests
         run: go test -race ./...
+
+  fuzz:
+    name: Fuzz
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      # -fuzz takes one target at a time, hence the loop. The seed corpus already
+      # runs under `go test`; this is the part that looks for new inputs.
+      - name: Fuzz the untrusted parsers
+        run: |
+          set -euo pipefail
+          go test ./internal/server/ -run FuzzNegotiate -fuzz FuzzNegotiate -fuzztime 60s
+          go test ./internal/akamai/ -run FuzzCleanTargetsTXT -fuzz FuzzCleanTargetsTXT -fuzztime 60s
+      # A crasher is written under testdata/fuzz/; keep it so the input can be
+      # replayed locally instead of re-found.
+      - name: Upload any crasher
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: fuzz-crashers
+          path: internal/**/testdata/fuzz/
+          if-no-files-found: ignore
