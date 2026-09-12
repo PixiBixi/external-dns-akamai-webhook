@@ -24,9 +24,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/dns"
-	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/edgegrid"
-	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/session"
+	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v14/pkg/dns"
+	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v14/pkg/edgegrid"
+	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v14/pkg/session"
 )
 
 // EdgeDNS is the slice of the Edge DNS API this provider uses. It is a subset of

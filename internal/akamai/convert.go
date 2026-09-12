@@ -19,7 +19,7 @@ package akamai
 import (
 	"strings"
 
-	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/dns"
+	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v14/pkg/dns"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/PixiBixi/external-dns-akamai-webhook/internal/logsafe"

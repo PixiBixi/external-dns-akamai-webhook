@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/dns"
+	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v14/pkg/dns"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 

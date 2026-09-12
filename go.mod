@@ -3,7 +3,6 @@ module github.com/PixiBixi/external-dns-akamai-webhook
 go 1.27.0
 
 require (
-	github.com/akamai/AkamaiOPEN-edgegrid-golang/v13 v13.4.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang/v14 v14.0.0
 	github.com/prometheus/client_golang v1.24.1
 	github.com/sirupsen/logrus v1.10.2
