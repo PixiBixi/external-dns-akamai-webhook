@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/dns"
+	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v14/pkg/dns"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

@@ -8,7 +8,7 @@ ExternalDNS pod and turns the plan ExternalDNS computes into Edge DNS recordsets
 It exists because ExternalDNS removed its in-tree Akamai provider
 ([kubernetes-sigs/external-dns#6485](https://github.com/kubernetes-sigs/external-dns/pull/6485)).
 This is that provider, ported to the current Edge DNS SDK
-(`github.com/akamai/AkamaiOPEN-edgegrid-golang/v13`) and run out of tree, which is
+(`github.com/akamai/AkamaiOPEN-edgegrid-golang/v14`) and run out of tree, which is
 the supported way to add a provider now. The whole repository is that port plus its
 supply chain: one commit (`b64e167`) brought the provider in, and most of the
 history since is release, CI and hardening work.
