@@ -30,15 +30,15 @@ deciding whether a failure is worth retrying. See
 
 ## Layout
 
-| Path | What lives there |
-| --- | --- |
-| `main.go` | Flag parsing, logger setup, signal handling, wiring. 90 lines, no logic |
-| `internal/config/` | Flags and their environment twins, plus start-up validation |
-| `internal/server/` | The two HTTP listeners, the webhook API handlers, media type negotiation |
-| `internal/akamai/` | The provider, the Edge DNS client, error classification, conversion, metrics |
-| `internal/logsafe/` | Strips line breaks from attacker-controlled values that reach a log line |
-| `deploy/` | Helm values for the ExternalDNS chart, and raw manifests for the Helm-less path |
-| `.github/workflows/` | CI, lint, CodeQL, govulncheck, scorecard, dependency review, release |
+| Path                 | What lives there                                                                |
+| -------------------- | ------------------------------------------------------------------------------- |
+| `main.go`            | Flag parsing, logger setup, signal handling, wiring. 90 lines, no logic         |
+| `internal/config/`   | Flags and their environment twins, plus start-up validation                     |
+| `internal/server/`   | The two HTTP listeners, the webhook API handlers, media type negotiation        |
+| `internal/akamai/`   | The provider, the Edge DNS client, error classification, conversion, metrics    |
+| `internal/logsafe/`  | Strips line breaks from attacker-controlled values that reach a log line        |
+| `deploy/`            | Helm values for the ExternalDNS chart, and raw manifests for the Helm-less path |
+| `.github/workflows/` | CI, lint, CodeQL, govulncheck, scorecard, dependency review, release            |
 
 ## Request flow
 

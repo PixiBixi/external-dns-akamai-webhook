@@ -33,11 +33,11 @@ process is serving, not that Edge DNS is reachable.
 
 Metrics exposed by this process, all on `/metrics` of the health port:
 
-| Metric | Type | Labels | Read it for |
-| --- | --- | --- | --- |
-| `external_dns_akamai_api_calls_total` | counter | `operation`, `status` | Real API volume and the HTTP status mix. `status` is the code when Edge DNS answered, `ok` on success, `error` when the call got no response |
-| `external_dns_akamai_api_call_duration_seconds` | histogram | `operation` | Edge DNS latency per operation |
-| `external_dns_akamai_permanent_failures_total` | counter | `operation` | Failures reported to ExternalDNS as non-retryable, so the ones about to restart it |
+| Metric                                          | Type      | Labels                | Read it for                                                                                                                                  |
+| ----------------------------------------------- | --------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `external_dns_akamai_api_calls_total`           | counter   | `operation`, `status` | Real API volume and the HTTP status mix. `status` is the code when Edge DNS answered, `ok` on success, `error` when the call got no response |
+| `external_dns_akamai_api_call_duration_seconds` | histogram | `operation`           | Edge DNS latency per operation                                                                                                               |
+| `external_dns_akamai_permanent_failures_total`  | counter   | `operation`           | Failures reported to ExternalDNS as non-retryable, so the ones about to restart it                                                           |
 
 The two signals worth alerting on together:
 
@@ -83,14 +83,14 @@ the same reason.
 
 What the test files guard:
 
-| File | Guards |
-| --- | --- |
-| `internal/akamai/provider_test.go` | Call counts (this provider is round trips, so counts are the assertion), the retry classification table, dry run, the zone cache, delete idempotence |
-| `internal/akamai/convert_test.go` | The TTL, TXT and trailing dot rules |
-| `internal/server/server_test.go` | Status mapping including retryable to 500 and permanent to 400, body caps, malformed bodies |
-| `internal/server/mediatype_test.go` | 406 versus 415, wildcards, version parameters |
-| `internal/config/config_test.go` | Flag and environment precedence, the credential validation |
-| `internal/logsafe/logsafe_test.go` | Line break stripping |
+| File                                | Guards                                                                                                                                               |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `internal/akamai/provider_test.go`  | Call counts (this provider is round trips, so counts are the assertion), the retry classification table, dry run, the zone cache, delete idempotence |
+| `internal/akamai/convert_test.go`   | The TTL, TXT and trailing dot rules                                                                                                                  |
+| `internal/server/server_test.go`    | Status mapping including retryable to 500 and permanent to 400, body caps, malformed bodies                                                          |
+| `internal/server/mediatype_test.go` | 406 versus 415, wildcards, version parameters                                                                                                        |
+| `internal/config/config_test.go`    | Flag and environment precedence, the credential validation                                                                                           |
+| `internal/logsafe/logsafe_test.go`  | Line break stripping                                                                                                                                 |
 
 Two fuzz targets cover the parsers that read untrusted input. Their seed corpus runs
 as part of `make test`; only `-fuzz` looks for new inputs, and `-fuzz` takes one
@@ -120,6 +120,29 @@ when no file is there, and never writes: no create, no update, no delete.
 Any change to the retry classification or to the HTTP status mapping needs a test
 first. Those two are the paths where a wrong answer takes the controller down rather
 than returning a wrong result.
+
+## Dependencies
+
+Renovate owns every bump (`renovate.json`). The parts that are decisions rather
+than defaults:
+
+- **A five day `minimumReleaseAge` gates automerge**, digests included, because a
+  hijacked package is usually spotted and yanked within days. `vulnerabilityAlerts`
+  overrides it, so a CVE fix still lands immediately.
+- **The semantic commit type encodes whether the bump ships in the binary.** Go
+  module updates become `feat`/`fix` so the next tag cuts a release; GitHub Actions
+  become `chore` so they do not.
+- **`gomodUpdateImportPaths` sits next to `gomodTidy`** and must stay there. `gomodTidy`
+  alone turns a Go major bump into a silent no-op: Renovate adds the `/vN` module to
+  `go.mod`, leaves every import on the old major, and the binary keeps shipping the
+  version that was supposed to be replaced while the new one sits in `go.mod` as a dead
+  direct require. That is what the v13 to v14 Edge DNS bump did before the option was
+  added. With it, `marwan-at-work/mod` rewrites the import paths inside the PR, so CI
+  compiles what would actually ship.
+
+A major bump still deserves a manual read of the upstream changelog against the
+symbols in the `EdgeDNS` interface: the rewrite is mechanical, the breaking changes
+are not.
 
 ## Releases
 

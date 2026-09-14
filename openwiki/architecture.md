@@ -122,11 +122,11 @@ Edge DNS enforces per-account API quotas.
 `ApplyChanges` returns before doing anything when the plan is empty, which is the
 common path in steady state and must not cost a zone listing.
 
-| Operation | Call | Shape |
-| --- | --- | --- |
-| create | `CreateRecordSets` | one call per zone, whole batch at once |
-| update | `UpdateRecord` | one call per record, never batched |
-| delete | `DeleteRecord` | one call per record, 404 tolerated as already absent |
+| Operation | Call               | Shape                                                |
+| --------- | ------------------ | ---------------------------------------------------- |
+| create    | `CreateRecordSets` | one call per zone, whole batch at once               |
+| update    | `UpdateRecord`     | one call per record, never batched                   |
+| delete    | `DeleteRecord`     | one call per record, 404 tolerated as already absent |
 
 The update loop carries the repository's loudest comment, and it is worth repeating
 here. `UpdateRecordSets` maps to `PUT /zones/{zone}/recordsets`, which the Edge DNS
@@ -192,10 +192,10 @@ neither static analysis nor a reader can call it sanitized.
 
 ## Where to start for a given change
 
-| Change | Start at | Watch out for |
-| --- | --- | --- |
-| A new flag | `internal/config/config.go`, then the README tables | Every flag needs its `AKAMAI_WEBHOOK_*` env twin; credentials keep the `AKAMAI_*` names |
-| Error handling | `internal/akamai/client.go` | The 4xx/5xx contract above. A test in `TestRetryable` is mandatory |
-| A new record type or rdata shape | `internal/akamai/convert.go` | TXT backticks and the trailing dot rules |
-| A new Edge DNS call | `EdgeDNS` interface in `client.go` | Add it to `operations` in `metrics.go` and to the stub in `provider_test.go` |
-| The HTTP surface | `internal/server/` | Use `api`'s constants, never a literal path or media type |
+| Change                           | Start at                                            | Watch out for                                                                           |
+| -------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| A new flag                       | `internal/config/config.go`, then the README tables | Every flag needs its `AKAMAI_WEBHOOK_*` env twin; credentials keep the `AKAMAI_*` names |
+| Error handling                   | `internal/akamai/client.go`                         | The 4xx/5xx contract above. A test in `TestRetryable` is mandatory                      |
+| A new record type or rdata shape | `internal/akamai/convert.go`                        | TXT backticks and the trailing dot rules                                                |
+| A new Edge DNS call              | `EdgeDNS` interface in `client.go`                  | Add it to `operations` in `metrics.go` and to the stub in `provider_test.go`            |
+| The HTTP surface                 | `internal/server/`                                  | Use `api`'s constants, never a literal path or media type                               |
