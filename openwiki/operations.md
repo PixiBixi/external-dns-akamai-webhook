@@ -64,7 +64,7 @@ make cover  # coverage report in the browser
 ```
 
 CI runs `go mod verify`, `go build ./...` and `go test -race ./...` on
-`ubuntu-24.04` (`.github/workflows/ci.yml`), plus a `fuzz` job that runs each target
+`ubuntu-26.04` (`.github/workflows/ci.yml`), plus a `fuzz` job that runs each target
 for 60 seconds and uploads any crasher from `internal/**/testdata/fuzz/` as an
 artifact so the input can be replayed locally instead of re-found. golangci-lint is
 pinned to an exact version in a separate workflow. Two further gates answer on the pull request as
@@ -128,7 +128,12 @@ than defaults:
 
 - **A five day `minimumReleaseAge` gates automerge**, digests included, because a
   hijacked package is usually spotted and yanked within days. `vulnerabilityAlerts`
-  overrides it, so a CVE fix still lands immediately.
+  overrides it, so a CVE fix still lands immediately; `osvVulnerabilityAlerts` also
+  raises those PRs from OSV advisories, not only GitHub's. Docker digests carry no
+  release timestamp, so they use `minimumReleaseAgeBehaviour: timestamp-optional`:
+  under the default they were held forever.
+- **Lock file maintenance is on and automerged**, so `go.sum` stays refreshed without
+  a manual PR.
 - **The semantic commit type encodes whether the bump ships in the binary.** Go
   module updates become `feat`/`fix` so the next tag cuts a release; GitHub Actions
   become `chore` so they do not.
