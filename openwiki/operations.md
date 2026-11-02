@@ -134,6 +134,9 @@ than defaults:
   under the default they were held forever.
 - **Lock file maintenance is on and automerged**, so `go.sum` stays refreshed without
   a manual PR.
+- **`pinDigests` is global except for `golangci/golangci-lint`**: the action's `version`
+  input takes a tag, not a digest, and the failed digest replacement blocked the whole
+  github-actions group update.
 - **The semantic commit type encodes whether the bump ships in the binary.** Go
   module updates become `feat`/`fix` so the next tag cuts a release; GitHub Actions
   become `chore` so they do not.
