@@ -1,7 +1,7 @@
 github.com/Masterminds/semver/v3 v3.4.0 h1:Zog+i5UMtVoCU8oKka5P7i9q9HgrJeGzI9SA1Xbatp0=
 github.com/Masterminds/semver/v3 v3.4.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
-github.com/akamai/AkamaiOPEN-edgegrid-golang/v14 v14.1.0 h1:ez0t9GpRCesQoe2LIGnpWBTnqFfKh4Xy91qePhK44PM=
-github.com/akamai/AkamaiOPEN-edgegrid-golang/v14 v14.1.0/go.mod h1:hqmN8UDGMxixkPDYp9Hnwbf/KOS/5WD/ei5tgUFeSPo=
+github.com/akamai/AkamaiOPEN-edgegrid-golang/v15 v15.0.0 h1:zjoAdWcdz/kxGfWepo82d/g2azMy6ACXNvYWY9Wlc1I=
+github.com/akamai/AkamaiOPEN-edgegrid-golang/v15 v15.0.0/go.mod h1:DatHtsq7q6pp/iCTNWLlLiJR4hcrntNDl3HSiugQ6cc=
 github.com/asaskevich/govalidator v0.0.0-20200108200545-475eaeb16496/go.mod h1:oGkLhpf+kjZl6xBf758TQhh5XrAeiJv/7FRz/2spLIg=
 github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 h1:DklsrG3dyBCFEj5IhUbnKptjxatkF07cF2ak3yi77so=
 github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2/go.mod h1:WaHUgvxTVq04UNunO+XhnAqY/wQc+bxr74GqbsZ/Jqw=
