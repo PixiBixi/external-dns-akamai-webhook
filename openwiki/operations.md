@@ -64,7 +64,12 @@ make cover  # coverage report in the browser
 ```
 
 CI runs `go mod verify`, `go build ./...` and `go test -race ./...` on
-`ubuntu-26.04` (`.github/workflows/ci.yml`), plus a `fuzz` job that runs each target
+`ubuntu-26.04` (`.github/workflows/ci.yml`). The tests go through `gotestsum`, which
+writes a JUnit report that `action-junit-report` turns into annotations
+(`annotate_only`, so fork PRs need no `checks: write`), and the total coverage lands in
+the job summary. The same job installs the `svu` version pinned in `release.yml` with
+the module toolchain, so a svu bump that needs a newer `go` directive fails on the PR
+instead of breaking the release after the merge. A `fuzz` job runs each target
 for 60 seconds and uploads any crasher from `internal/**/testdata/fuzz/` as an
 artifact so the input can be replayed locally instead of re-found. golangci-lint is
 pinned to an exact version in a separate workflow. Two further gates answer on the pull request as
@@ -147,6 +152,10 @@ than defaults:
   direct require. That is what the v13 to v14 Edge DNS bump did before the option was
   added. With it, `marwan-at-work/mod` rewrites the import paths inside the PR, so CI
   compiles what would actually ship.
+- **The Go rule matches both the `golang` and `toolchain` depTypes with
+  `rangeStrategy: bump`**: without the bump strategy Renovate leaves the `go` directive
+  alone and only moves `toolchain`, so a dependency needing a newer directive (svu did)
+  stalls.
 
 A major bump still deserves a manual read of the upstream changelog against the
 symbols in the `EdgeDNS` interface: the rewrite is mechanical, the breaking changes
