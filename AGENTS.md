@@ -4,7 +4,7 @@ Guidance for coding agents working in this repository.
 
 ## What this is
 
-An ExternalDNS webhook provider for Akamai Edge DNS: the in-tree provider ExternalDNS removed in kubernetes-sigs/external-dns#6485, ported to `AkamaiOPEN-edgegrid-golang/v14` and run out of tree as a sidecar of the ExternalDNS pod. Go 1.27, single binary, stateless: ExternalDNS owns the plan and the TXT registry, this process only answers `GET /`, `GET /records` and `POST /records`.
+An ExternalDNS webhook provider for Akamai Edge DNS: the in-tree provider ExternalDNS removed in kubernetes-sigs/external-dns#6485, ported to `AkamaiOPEN-edgegrid-golang/v15` and run out of tree as a sidecar of the ExternalDNS pod. Go 1.27, single binary, stateless: ExternalDNS owns the plan and the TXT registry, this process only answers `GET /`, `GET /records` and `POST /records`.
 
 ## Commands
 
