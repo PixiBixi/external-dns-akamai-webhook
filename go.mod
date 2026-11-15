@@ -1,6 +1,6 @@
 module github.com/PixiBixi/external-dns-akamai-webhook
 
-go 1.27.3
+go 1.27.4
 
 require (
 	github.com/akamai/AkamaiOPEN-edgegrid-golang/v15 v15.0.0
